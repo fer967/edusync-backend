@@ -90,7 +90,7 @@ builder.Services.AddCors(options =>
         policy =>
         {
             policy.WithOrigins("http://localhost:4200",
-                "https://edusync-frontend.onrender.com")
+                "https://edusync-frontend-5w7a.onrender.com")
             
                   .AllowAnyHeader()
                   .AllowAnyMethod();
