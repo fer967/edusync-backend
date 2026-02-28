@@ -10,6 +10,9 @@ using QuestPDF.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
+var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
+builder.WebHost.UseUrls($"http://*:{port}");
+
 var jwtSettings = builder.Configuration.GetSection("Jwt");
 var jwtKey = jwtSettings["Key"]
     ?? throw new InvalidOperationException("JWT Key is not configured.");
