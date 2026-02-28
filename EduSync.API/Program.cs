@@ -16,8 +16,6 @@ var jwtKey = jwtSettings["Key"]
 
 var key = Encoding.UTF8.GetBytes(jwtKey);
 
-//var jwtSettings = builder.Configuration.GetSection("Jwt");
-//var key = Encoding.UTF8.GetBytes(jwtSettings["Key"]);
 
 builder.Services.AddAuthentication(options =>
 {
@@ -112,8 +110,6 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseMiddleware<GlobalExceptionMiddleware>();
-
-app.UseHttpsRedirection();
 
 app.UseCors("AllowAngular");
 
