@@ -143,6 +143,32 @@ public class LessonsController : ControllerBase
 
         return NoContent();
     }
+
+    [HttpGet("{lessonId}/file")]
+    public async Task<IActionResult> DownloadLessonFile(Guid lessonId)
+    {
+        var lesson = await _repository.GetByIdAsync(lessonId);
+
+        if (lesson == null || string.IsNullOrEmpty(lesson.FilePath))
+            return NotFound();
+
+        var fullPath = Path.Combine(
+            Directory.GetCurrentDirectory(),
+            "wwwroot",
+            lesson.FilePath.TrimStart('/')
+        );
+
+        if (!System.IO.File.Exists(fullPath))
+            return NotFound();
+
+        var fileBytes = await System.IO.File.ReadAllBytesAsync(fullPath);
+
+        return File(
+            fileBytes,
+            "application/octet-stream",
+            lesson.FileName
+        );
+    }
 }
 
 public record CreateLessonDto(
