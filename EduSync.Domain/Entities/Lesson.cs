@@ -21,5 +21,7 @@ public class Lesson
 
     public string? FilePath { get; set; }
     public string? FileName { get; set; }
+
+    public string? CloudinaryPublicId { get; set; }
 }
 

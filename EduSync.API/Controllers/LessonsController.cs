@@ -10,10 +10,12 @@ using Microsoft.EntityFrameworkCore;
 public class LessonsController : ControllerBase
 {
     private readonly ILessonRepository _repository;
+    private readonly IFileStorageService _fileStorage;
 
-    public LessonsController(ILessonRepository repository)
+    public LessonsController(ILessonRepository repository, IFileStorageService fileStorage)
     {
         _repository = repository;
+        _fileStorage = fileStorage;
     }
 
           
@@ -73,6 +75,7 @@ public class LessonsController : ControllerBase
         return NoContent();
     }
 
+
     [HttpPost("{lessonId}/upload")]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> UploadFile(Guid lessonId, IFormFile file)
@@ -85,36 +88,20 @@ public class LessonsController : ControllerBase
         if (file == null || file.Length == 0)
             return BadRequest("Archivo inválido");
 
-        var uploadsFolder = Path.Combine(
-            Directory.GetCurrentDirectory(),
-            "wwwroot",
-            "uploads"
-        );
+        using var stream = file.OpenReadStream();
 
-        if (!Directory.Exists(uploadsFolder))
-            Directory.CreateDirectory(uploadsFolder);
+        var (url, publicId) = await _fileStorage.UploadFileAsync(stream, file.FileName);
 
-        var uniqueFileName = Guid.NewGuid() + "_" + file.FileName;
-
-        var fullPath = Path.Combine(uploadsFolder, uniqueFileName);
-
-        using (var stream = new FileStream(fullPath, FileMode.Create))
-        {
-            await file.CopyToAsync(stream);
-        }
-
-        lesson.FilePath = "/uploads/" + uniqueFileName;
+        lesson.FilePath = url;
         lesson.FileName = file.FileName;
+        lesson.CloudinaryPublicId = publicId;
 
         await _repository.UpdateAsync(lesson);
 
-        return Ok(new
-        {
-            lesson.FileName,
-            lesson.FilePath
-        });
+        return Ok(new { lesson.FileName, lesson.FilePath });
     }
 
+            
     [HttpDelete("{lessonId}/file")]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> DeleteLessonFile(Guid lessonId)
@@ -124,51 +111,21 @@ public class LessonsController : ControllerBase
         if (lesson == null)
             return NotFound();
 
-        if (!string.IsNullOrEmpty(lesson.FilePath))
+        if (!string.IsNullOrEmpty(lesson.CloudinaryPublicId))
         {
-            var fullPath = Path.Combine(
-                Directory.GetCurrentDirectory(),
-                "wwwroot",
-                lesson.FilePath.TrimStart('/')
-            );
-
-            if (System.IO.File.Exists(fullPath))
-                System.IO.File.Delete(fullPath);
+            await _fileStorage.DeleteFileAsync(lesson.CloudinaryPublicId);
         }
 
         lesson.FileName = null;
         lesson.FilePath = null;
+        lesson.CloudinaryPublicId = null;
 
         await _repository.UpdateAsync(lesson);
 
         return NoContent();
     }
-
-    [HttpGet("{lessonId}/file")]
-    public async Task<IActionResult> DownloadLessonFile(Guid lessonId)
-    {
-        var lesson = await _repository.GetByIdAsync(lessonId);
-
-        if (lesson == null || string.IsNullOrEmpty(lesson.FilePath))
-            return NotFound();
-
-        var fullPath = Path.Combine(
-            Directory.GetCurrentDirectory(),
-            "wwwroot",
-            lesson.FilePath.TrimStart('/')
-        );
-
-        if (!System.IO.File.Exists(fullPath))
-            return NotFound();
-
-        var fileBytes = await System.IO.File.ReadAllBytesAsync(fullPath);
-
-        return File(
-            fileBytes,
-            "application/octet-stream",
-            lesson.FileName
-        );
-    }
+  
+       
 }
 
 public record CreateLessonDto(

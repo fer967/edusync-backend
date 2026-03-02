@@ -2,11 +2,12 @@ using EduSync.API.Middleware;
 using EduSync.Application.Interfaces;
 using EduSync.Infrastructure.Persistence;
 using EduSync.Infrastructure.Repositories;
-using Microsoft.EntityFrameworkCore;
+using EduSync.Infrastructure.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using System.Text;
 using QuestPDF.Infrastructure;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -103,6 +104,8 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.ReferenceHandler =
             System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
     });
+
+builder.Services.AddScoped<IFileStorageService, CloudinaryStorageService>();
 
 QuestPDF.Settings.License = LicenseType.Community;
 
